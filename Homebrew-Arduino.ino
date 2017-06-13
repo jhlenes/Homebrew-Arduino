@@ -2,7 +2,7 @@
 
 const int NUM_SAMPLES = 12;
 const long LOOP_DELAY = 10000L; // Time between loops in milliseconds
-const long SEND_DELAY = 60000L; // Time between every time a temperature is logged to website
+const long SEND_DELAY = 5*60000L; // Time between every time a temperature is logged to website
 
 const byte HEAT_RELAY_PIN = 8;  // Wire this to the relay module
 const byte SENSOR_PIN = A0;
@@ -10,7 +10,7 @@ const byte SENSOR_PIN = A0;
 const byte RUNNING = 0;
 const byte WAITING = 1;
 
-ResponsiveAnalogRead analog(SENSOR_PIN, false, 0.01);
+ResponsiveAnalogRead analog(SENSOR_PIN, false, 0.1);
 
 int currentBatch = 0;
 int currentStatus = WAITING;
@@ -219,7 +219,7 @@ void loop() {
   float sensorValue = readSensorValue();
 
   // Calculate temperature based on formula. Formula found by testing.
-  float tempC = 0.000075457612181 * sensorValue * sensorValue + 0.034084433378039 * sensorValue - 13.556216402377600;
+  float tempC = 0.000026534 * sensorValue * sensorValue + 0.078856745 * sensorValue - 23.377122215; //0.000075457612181 * sensorValue * sensorValue + 0.034084433378039 * sensorValue - 13.556216402377600;
 
   if (currentStatus == RUNNING && millis() - lastTimeMillis > SEND_DELAY) {
     lastTimeMillis = millis();
