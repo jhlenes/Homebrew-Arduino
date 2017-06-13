@@ -2,7 +2,7 @@
 
 const int NUM_SAMPLES = 12;
 const long LOOP_DELAY = 10000L; // Time between loops in milliseconds
-const long SEND_DELAY = 60000L; // Time between updates sent to website
+const long SEND_DELAY = 30000L; // Time between updates sent to website
 
 const byte HEAT_RELAY_PIN = 8;  // Wire this to the relay module
 const byte SENSOR_PIN = A0;
@@ -103,13 +103,10 @@ void parseResult(String result) {
 
   if (result.charAt(0) == ';' && result.charAt(1) == ';') {
     result = result.substring(2);
-
-    if (result == "-1.0") {
-      currentStatus = WAITING;
-    } else {
-      currentStatus = RUNNING;
-      setPoint = result.toFloat();
-    }
+    currentStatus = RUNNING;
+    setPoint = result.toFloat();
+  } else if(result.charAt(0) == ':' && result.charAt(1) == ':') {
+    currentStatus = WAITING;
   }
 }
 
@@ -117,28 +114,33 @@ void parseResult(String result) {
 unsigned long lastSendTime = 0;
 void loop() {
   unsigned long currentTime = millis();
-  
+
   // Handle overflow
   if (currentTime < lastSendTime) {
     lastSendTime = 0;
   }
+
+  // Get setpoints from website
+  String res = Serial.readString();
+  parseResult(res);
 
   float sensorValue = readSensorValue();
 
   // Calculate temperature based on formula. Formula found by testing.
   float tempC = 0.000026534 * sensorValue * sensorValue + 0.078856745 * sensorValue - 23.377122215; //0.000075457612181 * sensorValue * sensorValue + 0.034084433378039 * sensorValue - 13.556216402377600;
 
-  if (currentStatus == RUNNING && currentTime - lastSendTime > SEND_DELAY) {
-    lastSendTime = currentTime;
-    // Send data to website
-    Serial.println("temp=" + String(tempC, 1) + "&heating=" + heating ? String(1) : String(0));
-  }
-
   // Control the heating relay
   controlHeat(tempC);
 
-  // Get setpoints from website
-  parseResult(Serial.readString());
+  if (currentStatus == RUNNING && currentTime - lastSendTime > SEND_DELAY) {
+    lastSendTime = currentTime;
+    // Send data to website
+    String heat = "0";
+    if (heating) {
+      heat = "1";
+    }
+    Serial.println("temp=" + String(tempC, 1) + "&heating=" + heat);
+  }
 
   delay(LOOP_DELAY);
 
